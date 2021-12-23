@@ -13,9 +13,6 @@ COPY --from=nodebuild /app/dist/ ./
 COPY backend/package*.json ./
 COPY frontend/ /app/static/
 
-COPY backend/migrate.js ./
-COPY backend/migrations/ ./migrations/
-
 RUN npm install --only=prod
 EXPOSE 8080
 ENV port=8080
