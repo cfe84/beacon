@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Values.ns }}
+  name: {{ .Values.name }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+    spec:
+      containers:
+      - name: {{ .Values.name }}-container
+        image: "charles.azurecr.io/{{ .Values.name }}:{{ .Values.imageVersion }}"
+        env:
+        - name: PORT
+          value: "8080"
+        - name: DB_FILE
+          value: "{{ .Values.dbFilePath }}"
+        - name: STORE_FOLDER
+          value: "{{ .Values.storeFolder }}"
+        - name: SIZE_LIMIT_BYTES
+          value: "10240"
+        ports:
+          - containerPort: 8080
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        azureFile:
+# read -p "Storage account name > " STORAGE_ACCOUNT_NAME && \
+# read -p " Storage account key > " STORAGE_ACCOUNT_KEY && \
+# APP_NAMESPACE=beacon && \
+# kubectl -n $APP_NAMESPACE create secret generic azure-sec \
+#   --from-literal=azurestorageaccountname=$STORAGE_ACCOUNT_NAME \
+#   --from-literal=azurestorageaccountkey=$STORAGE_ACCOUNT_KEY
+          secretName: azure-sec
+          shareName: storage
+          readOnly: false

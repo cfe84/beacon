@@ -1,0 +1,6 @@
+hostname: 
+ns: beacon
+name: beacon
+imageVersion: latest
+dbFilePath:
+storeFolder: /data/
