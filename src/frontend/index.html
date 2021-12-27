@@ -1,7 +1,29 @@
 <html>
 
+<head>
+  <link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.css" type="text/css">
+  <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.js"></script>
+  <style>
+    html,
+    body {
+      margin: 0;
+    }
+
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+  <script type="module" src="src/initMap.js">  </script>
+
+</head>
+
 <body>
-  Bonjour
+  <div>
+    <button id="refresh-btn">Refresh</button> <br />
+    Last known coordinates: <span id="last-known-txt"></span>
+  </div>
+  <div id="map"></div>
 </body>
 
 </html>
