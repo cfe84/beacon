@@ -3,7 +3,7 @@ import { html } from "./html.js"
 
 function initMap(currentPosition, positionHistory) {
   var map = new atlas.Map('map', {
-    center: [-122.94, 49.36],
+    center: currentPosition,
     zoom: 12,
     language: 'en-US',
     authOptions: {
