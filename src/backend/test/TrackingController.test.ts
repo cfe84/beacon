@@ -1,11 +1,27 @@
 import { IStore } from "../src/IStore"
-import { TrackingController } from "../src/TrackingController"
+import { TrackingController, TrackingControllerDeps } from "../src/TrackingController"
 import * as testdouble from "testdouble"
 import { describe, Context, it } from "mocha"
 import { TrackPoint } from "../src/TrackPoint"
 import { Track } from "../src/Track"
+import { INotifier } from "../src/INotifier"
+import { Share } from "../src/Share"
+import { User } from "../src/User"
 
 const baseDate = new Date()
+const userId = "demo"
+const userName = "USER_NAME"
+const defaultUser: User = {
+  id: userId,
+  key: "",
+  name: userName
+}
+const share1: Share = {
+  code: "CODE",
+  email: "EMAIL",
+  phone: "PHONE",
+  userId
+}
 
 const createTimestamp = (deltaMinutes: number) => {
   const date = new Date()
@@ -26,27 +42,42 @@ const createFakePoint = (base: Partial<TrackPoint> = {}) => {
   return res
 }
 
+const createFakeDeps = (lastTrack: Track | undefined = undefined,
+  shares: Share[] = [share1],
+  user: User = defaultUser): TrackingControllerDeps => {
+  const deps = {
+    store: testdouble.object<IStore>(),
+    notifier: testdouble.object<INotifier>()
+  }
+  testdouble.when(deps.store.getLastTrackAsync(userId)).thenResolve(lastTrack)
+  testdouble.when(deps.store.getSharesAsync(userId)).thenResolve(shares)
+  testdouble.when(deps.store.getUserAsync(user.id)).thenResolve(user)
+  return deps
+}
+
 describe("Tracking controller", function () {
-  it("Creates the first track for a user", async function () {
+  it("Creates the first track for a user, and sends notifications", async function () {
     // given
-    const userId = "demo"
-    const fakeStore = testdouble.object<IStore>()
+    const fakeDeps = createFakeDeps()
     const trackpoint = createFakePoint()
-    testdouble.when(fakeStore.getLastTrackAsync(userId)).thenResolve(undefined)
 
     // when
-    const controller = new TrackingController({ store: fakeStore })
+    const controller = new TrackingController(fakeDeps)
     await controller.addPointAsync(userId, trackpoint)
 
     // then
     // Adds track
     let trackId = ""
-    testdouble.verify(fakeStore.addTrackAsync(userId, testdouble.matchers.argThat((track: Track) => {
+    testdouble.verify(fakeDeps.store.addTrackAsync(userId, testdouble.matchers.argThat((track: Track) => {
       trackId = track.id
       return track.id && track.points.length === 0
     })), { times: 1 })
     // adds point
-    testdouble.verify(fakeStore.addTrackPointAsync(userId, trackId, trackpoint, true))
+    testdouble.verify(fakeDeps.store.addTrackPointAsync(userId, trackId, trackpoint, true))
+    // sends notification
+    testdouble.verify(
+      fakeDeps.notifier.sendNotificationAsync(share1, testdouble.matchers.anything(), testdouble.matchers.anything(), testdouble.matchers.anything())
+    )
   })
 
   it("Reuses a recent track for a user", async function () {
@@ -63,19 +94,24 @@ describe("Tracking controller", function () {
         createFakePoint({ timestamp: createTimestamp(-20) }),
       ]
     }
-    const fakeStore = testdouble.object<IStore>()
+    // const fakeStore = testdouble.object<IStore>()
     const trackpoint = createFakePoint()
-    testdouble.when(fakeStore.getLastTrackAsync(userId)).thenResolve(track)
+    const fakeDeps = createFakeDeps(track)
 
     // when
-    const controller = new TrackingController({ store: fakeStore })
+    const controller = new TrackingController(fakeDeps)
     await controller.addPointAsync(userId, trackpoint)
 
     // then
     // Does not add track
-    testdouble.verify(fakeStore.addTrackAsync(testdouble.matchers.anything(), testdouble.matchers.anything()), { times: 0 })
+    testdouble.verify(fakeDeps.store.addTrackAsync(testdouble.matchers.anything(), testdouble.matchers.anything()), { times: 0 })
     // adds point
-    testdouble.verify(fakeStore.addTrackPointAsync(userId, track.id, trackpoint, true))
+    testdouble.verify(fakeDeps.store.addTrackPointAsync(userId, track.id, trackpoint, true))
+    // doesn't send notification
+    testdouble.verify(
+      fakeDeps.notifier.sendNotificationAsync(testdouble.matchers.anything(), testdouble.matchers.anything(), testdouble.matchers.anything(), testdouble.matchers.anything())
+      , { times: 0 })
+
   })
 
   it("Create a new track if it's too old", async function () {
@@ -88,22 +124,25 @@ describe("Tracking controller", function () {
         createFakePoint({ timestamp: createTimestamp(-100) }),
       ]
     }
-    const fakeStore = testdouble.object<IStore>()
+    const fakeDeps = createFakeDeps(fakeTrack)
     const trackpoint = createFakePoint()
-    testdouble.when(fakeStore.getLastTrackAsync(userId)).thenResolve(fakeTrack)
 
     // when
-    const controller = new TrackingController({ store: fakeStore })
+    const controller = new TrackingController(fakeDeps)
     await controller.addPointAsync(userId, trackpoint)
 
     // then
     // Does not add track
     let trackId = ""
-    testdouble.verify(fakeStore.addTrackAsync(userId, testdouble.matchers.argThat((track: Track) => {
+    testdouble.verify(fakeDeps.store.addTrackAsync(userId, testdouble.matchers.argThat((track: Track) => {
       trackId = track.id
       return track.id && track.id !== fakeTrack.id && track.points.length === 0
     })), { times: 1 })
     // adds point
-    testdouble.verify(fakeStore.addTrackPointAsync(userId, trackId, trackpoint, true))
+    testdouble.verify(fakeDeps.store.addTrackPointAsync(userId, trackId, trackpoint, true))
+    // sends notification
+    testdouble.verify(
+      fakeDeps.notifier.sendNotificationAsync(share1, testdouble.matchers.anything(), testdouble.matchers.anything(), testdouble.matchers.anything())
+    )
   })
 })

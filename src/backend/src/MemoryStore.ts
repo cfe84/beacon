@@ -1,9 +1,12 @@
+import { IStore } from "./IStore";
+import { Share } from "./Share";
 import { Track } from "./Track";
 import { TrackPoint } from "./TrackPoint";
+import { User } from "./User";
 
 type Dictionary<T> = { [key: string]: T }
 
-export class MemoryStore {
+export class MemoryStore implements IStore {
   private tracks: Dictionary<Dictionary<Track>> = {}
   private lastTrackIdByUser: Dictionary<string> = {}
 
@@ -34,5 +37,16 @@ export class MemoryStore {
       return this.tracks[userId][trackId]
     }
     return undefined
+  }
+
+  private shares: Dictionary<Share[]> = {}
+
+  async getSharesAsync(userId: string): Promise<Share[]> {
+    return this.shares[userId]
+  }
+
+  private users: Dictionary<User> = {}
+  async getUserAsync(userId: string): Promise<User> {
+    return this.users[userId]
   }
 }

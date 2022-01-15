@@ -1,5 +1,6 @@
 import exp = require("constants")
 import * as Express from "express"
+import { MailNotifier } from "./MailNotifier"
 import { MemoryStore } from "./MemoryStore"
 import { TrackingController } from "./TrackingController"
 import { TrackPoint } from "./TrackPoint"
@@ -16,8 +17,10 @@ export interface BeaconServerDeps {
 export class BeaconServer {
   private trackingController: TrackingController
   constructor(config: BeaconServerConfig, private deps: BeaconServerDeps) {
+    const notifier = new MailNotifier()
     this.trackingController = new TrackingController({
-      store: deps.store
+      store: deps.store,
+      notifier
     })
 
     const app = Express()
