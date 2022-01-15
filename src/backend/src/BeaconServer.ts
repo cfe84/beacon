@@ -1,7 +1,7 @@
 import exp = require("constants")
 import * as Express from "express"
-import { allowedNodeEnvironmentFlags } from "process"
-import { Tracker } from "./Tracker"
+import { MemoryStore } from "./MemoryStore"
+import { TrackingController } from "./TrackingController"
 import { TrackPoint } from "./TrackPoint"
 
 export interface BeaconServerConfig {
@@ -10,13 +10,17 @@ export interface BeaconServerConfig {
 }
 
 export interface BeaconServerDeps {
-  tracker: Tracker
+  store: MemoryStore
 }
 
 export class BeaconServer {
+  private trackingController: TrackingController
   constructor(config: BeaconServerConfig, private deps: BeaconServerDeps) {
-    const app = Express()
+    this.trackingController = new TrackingController({
+      store: deps.store
+    })
 
+    const app = Express()
     app.use(Express.static(config.staticFolder))
     app.get("/points/:id", this.addTrackPoint.bind(this))
     app.get("/api/points/:id", this.getTrackPoints.bind(this))
@@ -35,15 +39,19 @@ export class BeaconServer {
       speed: Number.parseFloat(`${req.query["speed"]}`),
       bearing: Number.parseFloat(`${req.query["bearing"]}`),
     }
-    const id = req.params["id"]
-    await this.deps.tracker.addTrackPointAsync(id, trackPoint)
+    const userId = req.params["id"]
+    let lastTrack = await this.deps.store.getLastTrackAsync(userId)
+    if (!lastTrack) {
+      lastTrack = { id: "1", points: [] }
+    }
+    await this.deps.store.addTrackPointAsync(userId, lastTrack.id, trackPoint)
     res.end()
   }
 
   private async getTrackPoints(req: Express.Request, res: Express.Response) {
     const id = req.params["id"]
-    const points = await this.deps.tracker.getTrackPointsAsync(id)
-    res.json(points)
+    const points = await this.deps.store.getLastTrackAsync(id)
+    res.json(points?.points)
     res.end()
   }
 }
