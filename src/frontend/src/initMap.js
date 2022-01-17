@@ -1,4 +1,4 @@
-import { getTrackPointsAsync } from "./apiConnector.js"
+import { getTracksAsync } from "./apiConnector.js"
 import { html } from "./html.js"
 
 function initMap(currentPosition, positionHistory) {
@@ -56,24 +56,29 @@ function start() {
   // show the scale bar on the lower left corner
   L.control.scale({ imperial: true, metric: true }).addTo(map);
   const lastKnownTxt = document.getElementById("last-known-txt")
-  getTrackPointsAsync("demo")
-    .then((points) => {
-      const lastPoint = points[points.length - 1]
-      const lastCoordinates = pointToMapCoordinates(lastPoint)
-      const mappedPoints = points.map(pointToMapCoordinates)
-      // initMap(lastCoordinates, mappedPoints)
-      var polyline = L.polyline(mappedPoints, { color: 'red' }).addTo(map);
-      var pos = L.circle(lastCoordinates, {
-        color: 'blue',
-        fillColor: '#f03',
-        fillOpacity: 0.5,
-        radius: lastPoint.hdop
-      }).addTo(map);
-      var marker = L.marker(lastCoordinates).addTo(map)
-      marker.bindPopup(`Position at ${new Date(lastPoint.timestamp)}`)
-      // zoom the map to the polyline
-      map.fitBounds(polyline.getBounds());
-      lastKnownTxt.innerHTML = pointToDescription(lastPoint)
+  getTracksAsync("demo")
+    .then((tracks) => {
+      tracks.tracks.forEach((track, i, arr) => {
+        const points = track.points
+        const mappedPoints = points.map(pointToMapCoordinates)
+        // initMap(lastCoordinates, mappedPoints)
+        var polyline = L.polyline(mappedPoints, { color: 'red' }).addTo(map);
+        if (i === arr.length - 1) {
+          const lastPoint = points[points.length - 1]
+          const lastCoordinates = pointToMapCoordinates(lastPoint)
+          var pos = L.circle(lastCoordinates, {
+            color: 'blue',
+            fillColor: '#f03',
+            fillOpacity: 0.5,
+            radius: lastPoint.hdop
+          }).addTo(map);
+          var marker = L.marker(lastCoordinates).addTo(map)
+          marker.bindPopup(`Position at ${new Date(lastPoint.timestamp)}`)
+          // zoom the map to the polyline
+          map.fitBounds(polyline.getBounds());
+          lastKnownTxt.innerHTML = pointToDescription(lastPoint)
+        }
+      })
     })
 }
 

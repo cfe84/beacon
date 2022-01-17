@@ -14,6 +14,20 @@ export interface BeaconServerDeps {
   store: MemoryStore
 }
 
+const mapToSuccess = (data?: object) => {
+  return {
+    result: "success",
+    data
+  }
+}
+
+const mapToError = (error?: object) => {
+  return {
+    result: "error",
+    error
+  }
+}
+
 export class BeaconServer {
   private trackingController: TrackingController
   constructor(config: BeaconServerConfig, private deps: BeaconServerDeps) {
@@ -43,18 +57,21 @@ export class BeaconServer {
       bearing: Number.parseFloat(`${req.query["bearing"]}`),
     }
     const userId = req.params["id"]
-    let lastTrack = await this.deps.store.getLastTrackAsync(userId)
-    if (!lastTrack) {
-      lastTrack = { id: "1", points: [] }
-    }
-    await this.deps.store.addTrackPointAsync(userId, lastTrack.id, trackPoint)
+    await this.trackingController.addPointAsync(userId, trackPoint)
+    res.json(mapToSuccess())
     res.end()
   }
 
   private async getTrackPoints(req: Express.Request, res: Express.Response) {
-    const id = req.params["id"]
-    const points = await this.deps.store.getLastTrackAsync(id)
-    res.json(points?.points)
+    const userId = req.params["id"]
+    try {
+      const tracks = await this.deps.store.getTracksAsync(userId)
+      res.json(mapToSuccess({ tracks }))
+    }
+    catch (error: any) {
+      res.json(mapToError(error.message))
+      res.statusCode = 400
+    }
     res.end()
   }
 }

@@ -24,6 +24,9 @@ export class MemoryStore implements IStore {
   }
 
   async getTracksAsync(userId: string): Promise<Track[]> {
+    if (!this.tracks[userId]) {
+      throw Error(`UserId '${userId}' not found`)
+    }
     return Object.values(this.tracks[userId])
   }
 

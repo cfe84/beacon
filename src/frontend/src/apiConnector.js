@@ -5,7 +5,11 @@ function sendQueryAsync(url, method = "GET", body = undefined, headers = {}) {
       if (this.readyState === 4) {
         try {
           const response = JSON.parse(this.responseText)
-          resolve(response)
+          if (response.result === "success") {
+            resolve(response.data)
+          } else {
+            reject(response.error)
+          }
         } catch (err) {
           reject(Error(this.responseText))
         }
@@ -22,7 +26,12 @@ function sendQueryAsync(url, method = "GET", body = undefined, headers = {}) {
   })
 }
 
-export async function getTrackPointsAsync(id) {
-  const res = await sendQueryAsync("points/" + id, "GET")
-  return res
+export async function getTracksAsync(id) {
+  try {
+    const res = await sendQueryAsync("points/" + id, "GET")
+    return res
+  } catch (error) {
+    alert(error)
+    return []
+  }
 }
