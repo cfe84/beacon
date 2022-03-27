@@ -26,18 +26,18 @@ spec:
           value: "10240"
         ports:
           - containerPort: 8080
-#         volumeMounts:
-#         - name: data
-#           mountPath: /data
-#       volumes:
-#       - name: data
-#         azureFile:
-# # read -p "Storage account name > " STORAGE_ACCOUNT_NAME && \
-# # read -p " Storage account key > " STORAGE_ACCOUNT_KEY && \
-# # APP_NAMESPACE=beacon && \
-# # kubectl -n $APP_NAMESPACE create secret generic azure-sec \
-# #   --from-literal=azurestorageaccountname=$STORAGE_ACCOUNT_NAME \
-# #   --from-literal=azurestorageaccountkey=$STORAGE_ACCOUNT_KEY
-#           secretName: azure-sec
-#           shareName: storage
-#           readOnly: false
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        azureFile:
+# read -p "Storage account name > " STORAGE_ACCOUNT_NAME && \
+# read -p " Storage account key > " STORAGE_ACCOUNT_KEY && \
+# APP_NAMESPACE=beacon && \
+# kubectl -n $APP_NAMESPACE create secret generic azure-sec \
+#   --from-literal=azurestorageaccountname=$STORAGE_ACCOUNT_NAME \
+#   --from-literal=azurestorageaccountkey=$STORAGE_ACCOUNT_KEY
+          secretName: azure-sec
+          shareName: storage
+          readOnly: false
